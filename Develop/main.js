@@ -1,13 +1,18 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const Post = require("./models/post");
-
+const Post = require("./public/assets/models/post");
+const { v4: uuidv4 } = require("uuid");
+const db = require("./db/db.json");
 const app = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(express.json());
+
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -30,15 +35,25 @@ app.get("/api/notes", (req, res) => {
 });
 
 app.post("/api/notes", (req, res) => {
-  const post = new Post(req.body.title, req.body.text);
+  const post = { title: req.body.title, text: req.body.text, id: uuidv4() };
+  console.log(post);
+  const savedNotes = db;
+  savedNotes.push(post);
 
-  Post.save(post)
-    .then(() => {
-      res.status(201).json({ message: "Post created successfully" });
+  fs.writeFileSync(
+    path.join(__dirname, "db", "db.json"),
+    JSON.stringify(savedNotes),
+    (err) => {
+      console.log(err);
     })
-    .catch((error) => {
-      res.status(500).json({ message: "Error creating post", error });
-    });
+  res.status(200).json(savedNotes);
+  // Post.save(post)
+  //   .then(() => {
+  //     res.status(201).json({ message: "Post created successfully" });
+  //   })
+  //   .catch((error) => {
+  //     res.status(500).json({ message: "Error creating post", error });
+  //   });
 });
 
 app.delete("/api/notes/:id", (req, res) => {
